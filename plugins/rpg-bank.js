@@ -1,62 +1,24 @@
-
+// Bank Editado Por Cuervo
+//★彡[ᴄʀᴇᴀᴛᴇ ʙʏ ᴄᴜᴇʀᴠᴏ-ᴛᴇᴀᴍ-ꜱᴜᴘʀᴇᴍᴇ]彡★
 // Respeten credito xddddd (ratas inmundas)
+
 import fetch from 'node-fetch'
 import db from '../lib/database.js'
-
-const img = 'https://qu.ax/XQguf.jpg'
-
-function obtenerRango(level) {
-  if (level >= 100) return '🌟 Rey Mago'
-  if (level >= 70) return '👑 Mago Real'
-  if (level >= 50) return '⚔️ Capitán de Escuadrón'
-  if (level >= 40) return '🔮 Alto Mago'
-  if (level >= 30) return '🥇 Caballero Mágico de Oro'
-  if (level >= 20) return '🥈 Caballero Mágico de Plata'
-  if (level >= 10) return '🥉 Caballero Mágico de Bronce'
-  if (level >= 5) return '🌱 Mago Novato'
-  return '📘 Aprendiz de Grimorio'
+let img = 'https://files.catbox.moe/al4kc8.jpg'
+let handler = async (m, {conn, usedPrefix}) => {
+   let who = m.mentionedJid[0] ? m.mentionedJid[0] : m.quoted ? m.quoted.sender : m.sender
+   if (who == conn.user.jid) return m.react('✖️')
+   if (!(who in global.db.data.users)) return m.reply(`${emoji4} El usuario no se encuentra en mi base de datos.`)
+   let user = global.db.data.users[who]
+   let name = conn.getName(who);
+   let txt = (`${who == m.sender ? `╭━〔  ⪛✰ ʙᴀɴᴄᴏ ᴄᴇɴᴛʀᴀʟ ✰⪜  〕\n┋ 👤 *Usuario:* ${name}\n┋ 💸 *${moneda} En Cartera*: ${user.coin}\n┋ 🏦 *${moneda} En Banco*: ${user.bank}\n┋ ✨ *Experiencia:* ${user.exp}\n┋ 🆙 *Nivel:* ${user.level}\n┋ ⚜️ *Rol:* ${user.role}\n┋ 📅 *Fecha:* ${new Date().toLocaleString('id-ID')}\n╰━━━━━━━━━━━━⬣` : `╭━〔  ${packname}  〕⬣\n┋ 👤 *Usuario:* @${who.split('@')[0]}\n┋ 💸 *${moneda} En Cartera*: ${user.coin}\n┋ 🏦 *${moneda} En Banco*: ${user.bank}\n┋ *✨ Experiencia:* ${user.exp}\n┋ 🆙 *Nivel:* ${user.level}\n┋ ⚜️ *Rol:* ${user.role}\n┋ 📅 *Fecha:* ${new Date().toLocaleString('id-ID')}\n╰━━━━━━━━━━━━⬣`}`)
+await conn.sendFile(m.chat, img, 'thumbnail.jpg', txt, fkontak, null, {mentions: [who] })
 }
 
-let handler = async (m, { conn }) => {
-  let who = m.mentionedJid?.[0] || m.quoted?.sender || m.sender
+handler.help = ['bank']
+handler.tags = ['economy']
+handler.command = ['bank', 'banco'] 
+handler.register = true 
+handler.group = true
 
-  if (who === conn.user.jid) return m.react('✖️')
-
-  if (!global.db.data.users[who]) {
-    return m.reply(`📕 *El grimorio de este usuario aún no ha sido registrado en el Reino Mágico.*`)
-  }
-
-  let user = global.db.data.users[who]
-  let name = await conn.getName(who)
-  let rangoMagico = obtenerRango(user.level)
-
-  let nombreParaMostrar = who === m.sender ? name : '@' + who.split('@')[0]
-
-  let txt = `
-𝙂𝙍𝙄𝙈𝙊𝙍𝙄𝙊 𝙁𝙄𝙉𝘼𝙉𝘾𝙄𝙀𝙍𝙊 👑
-🧙‍♂️ ᴍᴀɢᴏ: ${nombreParaMostrar}
-📚 ᴇxᴘᴇʀɪᴇɴᴄɪᴀ ᴀᴄᴜᴍᴜʟᴀᴅᴀ: ${user.exp}
-📈 ɴɪᴠᴇʟ ᴅᴇ ᴍᴀɢɪᴀ: ${user.level}
-🎖️ ʀᴀɴɢᴏ ᴍáɢɪᴄᴏ: ${rangoMagico}
-🕰️ ꜰᴇᴄʜᴀ: ${new Date().toLocaleString('es-ES')}
-📘━━━━━━━━━━━━━━━━━━📘`.trim()
-
-  await conn.sendFile(
-    m.chat,
-    img,
-    'grimorio.jpg',
-    txt,
-    m,
-    null,
-    {
-      mentions: [who]
-    }
-  )
-}
-
-handler.help = ['bank', 'banco']
-handler.tags = ['rpg']
-handler.command = ['bank', 'banco']
-handler.register = true
-
-export default handler
+export default handler 

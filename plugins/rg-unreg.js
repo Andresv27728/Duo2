@@ -1,24 +1,16 @@
-let handler = async function (m, { conn }) {
+import { createHash } from 'crypto'
+let handler = async function (m, { conn, args, usedPrefix}) {
+  if (!args[0]) return m.reply(`🗳 Ingresa tu número de serie junto al comando.`)
   let user = global.db.data.users[m.sender]
-  
-  if (!user.registered) {
-    return m.reply(`
-⚠️ *ERROR DE SISTEMA*
-🚫 No estás registrado actualmente.
-`)
-  }
-
+  let sn = createHash('md5').update(m.sender).digest('hex')
+  if (args[0] !== sn) return m.reply('🗳 Número de serie incorrecto')
   user.registered = false
-  m.reply(`
-🗡️ *USUARIO ELIMINADO*
-📁 Registro completamente eliminado del sistema...
-⌛ vuelve a registrarte con *.reg* si lo deseas.
-`)
+  m.reply(`🗳 Registro eliminado.`)
 }
-
-handler.help = ['unreg']
+handler.help = ['unreg'] 
 handler.tags = ['rg']
-handler.command = ['unreg']
+
+handler.command = ['unreg'] 
 handler.register = true
 
 export default handler
