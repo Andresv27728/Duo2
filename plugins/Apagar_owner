@@ -1,0 +1,52 @@
+let handler = async (m, { conn, isOwner }) => {
+  if (!isOwner) return m.reply('🚫 Este comando solo puede ser usado por el *Owner*.')
+  
+  await conn.sendMessage(m.chat, {
+    text: '⚠️ ¿Estás seguro de que quieres *apagar* el bot?\n\nPresiona el botón si estás completamente seguro.',
+    footer: 'Este proceso detendrá el bot hasta que se reinicie manualmente.',
+    buttons: [
+      { buttonId: '.confirmar_apagado', buttonText: { displayText: '✅ Confirmar apagado' }, type: 1 }
+    ],
+    headerType: 1
+  }, { quoted: m })
+}
+
+let confirmarHandler = async (m, { conn, isOwner }) => {
+  if (!isOwner) return m.reply('🚫 Solo el Owner puede confirmar el apagado.')
+
+  const frames = [
+    '🔴 Apagando.',
+    '🟠 Apagando..',
+    '🟡 Apagando...',
+    '🟢 Cerrando servicios.',
+    '🔵 Guardando base de datos.',
+    '🟣 Terminando procesos.',
+    '⚫ Apagado completo.'
+  ]
+
+  let { key } = await conn.sendMessage(m.chat, { text: frames[0] }, { quoted: m })
+
+  for (let i = 1; i < frames.length; i++) {
+    await new Promise(resolve => setTimeout(resolve, 700))
+    await conn.sendMessage(m.chat, { text: frames[i], edit: key })
+  }
+
+  await new Promise(resolve => setTimeout(resolve, 1000))
+  await m.reply('🛑 Bot apagado exitosamente. Reinícialo manualmente para volver a encenderlo.')
+
+  process.exit()
+}
+
+// Comando inicial para mostrar el botón
+handler.command = /^apagar$/i
+handler.owner = true
+handler.group = false
+
+// Comando oculto para confirmar
+export const confirmHandler = {
+  command: /^confirmar_apagado$/i,
+  owner: true,
+  handler: confirmarHandler
+}
+
+export default handler 
