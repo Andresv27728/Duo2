@@ -2,48 +2,66 @@ import { WAMessageStubType } from '@whiskeysockets/baileys'
 import fetch from 'node-fetch'
 
 export async function before(m, { conn, participants, groupMetadata }) {
-  if (!m.messageStubType || !m.isGroup || !m.messageStubParameters?.[0]) return !0
+  if (!m.messageStubType || !m.isGroup) return true
 
-  const jid = m.messageStubParameters[0]
-  const user = `@${jid.split('@')[0]}`
-  const pp = await conn.profilePictureUrl(jid, 'image').catch(() => 'https://raw.githubusercontent.com/The-King-Destroy/Adiciones/main/Contenido/1745522645448.jpeg')
-  const img = await fetch(pp).then(r => r.buffer())
-  const chat = global.db.data.chats[m.chat] || {}
-  const total = m.messageStubType == 27 ? participants.length + 1 : participants.length - 1
+  let who = m.messageStubParameters[0]
+  let taguser = `@${who.split('@')[0]}`
+  let chat = global.db.data.chats[m.chat]
+  let defaultImage = 'https://qu.ax/VdyQE.jpg'
 
-  const contacto = {
-    key: { participants: "0@s.whatsapp.net", remoteJid: "status@broadcast", fromMe: false, id: "Halo" },
-    message: { contactMessage: { vcard: `BEGIN:VCARD\nVERSION:3.0\nN:;Bot;;;\nFN:Bot\nTEL;waid=${jid.split('@')[0]}:${jid.split('@')[0]}\nEND:VCARD` } },
-    participant: "0@s.whatsapp.net"
+  if (chat.welcome) {
+    let img
+    try {
+      let pp = await conn.profilePictureUrl(who, 'image')
+      img = await (await fetch(pp)).buffer()
+    } catch {
+      img = await (await fetch(defaultImage)).buffer()
+    }
+
+    // BOTÓNES PERSONALIZADOS
+    const buttons = [
+      { buttonId: '#menu', buttonText: { displayText: '📜 Ver Menú' }, type: 1 },
+      { buttonId: '#owner', buttonText: { displayText: '👑 owner' }, type: 1 },
+      { buttonId: '#estado', buttonText: { displayText: '⚙ Estado Bot' }, type: 1 }
+    ]
+
+    if (m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_ADD) {
+      let bienvenida = `┏━〔 *Bienvenido/a a Duolingo-AI* 〕━┓
+┃ Usuario: ${taguser}
+┃ Grupo: *${groupMetadata.subject}*
+┃
+┃ ✨ ¡Pásala genial con todos!
+┃ 📌 Usa los botones para explorar
+┗━━━━━━━━━━━━━━━━━━┛`
+
+      await conn.sendMessage(m.chat, {
+        image: img,
+        caption: bienvenida,
+        mentions: [who],
+        buttons: buttons,
+        footer: 'Bienvenido a Duolingo-AI'
+      })
+    } else if (
+      m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_REMOVE ||
+      m.messageStubType === WAMessageStubType.GROUP_PARTICIPANT_LEAVE
+    ) {
+      let bye = `┏━〔 *Hasta pronto de Duolingo-AI* 〕━┓
+┃ Usuario: ${taguser}
+┃ Grupo: *${groupMetadata.subject}*
+┃
+┃ 😢 ¡Te extrañaremos!
+┃ 🌐 Vuelve cuando gustes
+┗━━━━━━━━━━━━━━━━━━┛`
+
+      await conn.sendMessage(m.chat, {
+        image: img,
+        caption: bye,
+        mentions: [who],
+        buttons: buttons,
+        footer: 'Gracias por usar Duolingo-AI'
+      })
+    }
   }
 
-  if (!chat.welcome) return
-
-  if (m.messageStubType == 27) {
-    const bienvenida = `
-🟣 ASTA-BOT v2077 — Bienvenido
-
-👤 Usuario: ${user}
-📍 Grupo: ${groupMetadata.subject}
-🔗 Estado: Conectado
-👥 Miembros: ${total}
-
-⌬ Usa *#help* para ver los comandos disponibles
-`
-    await conn.sendMini(m.chat, '🚀 CONEXIÓN ESTABLECIDA', 'ASTA-BOT', bienvenida, img, img, null, contacto)
-  }
-
-  if ([28, 32].includes(m.messageStubType)) {
-    const despedida = `
-🔻 ASTA-BOT v2077 — Nunca vuelvas
-
-👤 Usuario: ${user}
-📍 Grupo: ${groupMetadata.subject}
-🔌 Estado: Desconectado
-👥 Miembros: ${total}
-
-⌬ Datos eliminados correctamente
-`
-    await conn.sendMini(m.chat, '⚠️ DESCONECTADO DEL SISTEMA', 'ASTA-BOT', despedida, img, img, null, contacto)
-  }
+  return true
 }
