@@ -1,136 +1,269 @@
-import { xpRange } from '../lib/levelling.js'
+// El nombre del bot se puede cambiar, sí :v, lo siento, no se cambia automáticamente. 
 
-const textCyberpunk = (text) => {
-  const charset = {
-    a: 'ᴀ', b: 'ʙ', c: 'ᴄ', d: 'ᴅ', e: 'ᴇ', f: 'ꜰ', g: 'ɢ',
-    h: 'ʜ', i: 'ɪ', j: 'ᴊ', k: 'ᴋ', l: 'ʟ', m: 'ᴍ', n: 'ɴ',
-    o: 'ᴏ', p: 'ᴘ', q: 'ǫ', r: 'ʀ', s: 'ꜱ', t: 'ᴛ', u: 'ᴜ',
-    v: 'ᴠ', w: 'ᴡ', x: 'x', y: 'ʏ', z: 'ᴢ'
-  }
-  return text.toLowerCase().split('').map(c => charset[c] || c).join('')
-}
+import os from 'os'
+import PhoneNumber from 'awesome-phonenumber'
+import fs from 'fs'
+import fetch from 'node-fetch'
 
-let tags = {
-  'main': textCyberpunk('sistema'),
-  'group': textCyberpunk('grupos'),
-  'serbot': textCyberpunk('sub bots'),
-}
+let stateMenu = 0;
 
-const defaultMenu = {
-  before: `⚠️ 𝗔𝗟𝗘𝗥𝗧𝗔 𝗗𝗘 𝗦𝗜𝗦𝗧𝗘𝗠𝗔 ⚠️ 
-┃ ⛧ 𝙸𝙽𝙸𝙲𝙸𝙰𝙽𝙳𝙾: 𝙱𝙻𝙲-𝚂𝚈𝚂.exe
-┃ ⛧ 𝚄𝚂𝚄𝙰𝚁𝙸𝙾: %name
-┃ ⛧ 𝙼𝙾𝙳𝙾: %mode
-┃ ⛧ 𝙴𝚂𝚃𝙰𝙳𝙾:  𝗢𝗡𝗟𝗜𝗡𝗘 👻
-╚══⫷🔻𝙽𝙴𝚃𝚁𝚄𝙽𝙽𝙴𝚁🔻⫸══╝
+let handler = async (m, { conn, usedPrefix: _p, _args: theargs }) => {
+  let p = '```'
+  let x = '`'
+  let tags = {}
 
-╭─[𝗘𝗦𝗧𝗔𝗗𝗢 𝗗𝗘 𝗨𝗦𝗨𝗔𝗥𝗜𝗢]─╮
-│ 📊 𝗡𝗜𝗩𝗘𝗟: %level
-│ ⚡ 𝗘𝗫𝗣: %exp / %maxexp
-│ 🧮 𝗨𝗦𝗨𝗔𝗥𝗜𝗢𝗦: %totalreg
-│ ⏱ 𝗧𝗜𝗘𝗠𝗣𝗢 𝗔𝗖𝗧𝗜𝗩𝗢: %muptime
-╰──────────────────╯
-
-🧬 *𝗡𝗢𝗗𝗢 𝗛𝗔𝗖𝗞 𝗔𝗖𝗧𝗜𝗩𝗔𝗗𝗢*
-✦ Elige un comando para ejecutar protocolo.
-✦ Operador: *The Carlos 👑*
-
-%readmore
+  const defaultMenu = {
+  before: `
+┏━━━━━━━━━━━━━━━━━━
+┃  *ɪɴғᴏ- ʙᴏᴛ*
+┣━━━━━━━━━━━━━━━━━━
+┃ • *ɴᴏᴍʙʀᴇ ʙᴏᴛ*  : ${global.namebot}
+┃ • *ᴄʀᴇᴀᴛᴏʀ*     : Fantom X duolingo
+┃ • *ᴠᴇʀsɪ*     : ${global.versi}
+┣━━━━━━━━━━━━━━━━━━
+┃  *ɪɴғᴏ - ᴜsᴇʀ*
+┣━━━━━━━━━━━━━━━━━━
+┃ • *ɴᴏᴍʙʀᴇ ᴜsᴇʀ* : ${m.pushName || conn.getName(m.sender)}
+┃ • *ᴛᴏᴛᴀʟ ᴜsᴜᴀʀɪᴏs*    :  %totalreg
+┗━━━━━━━━━━━━━━━━━━
 `.trimStart(),
 
-  header: '\n╭─〔 🦠 %category 〕─╮',
-  body: '│ ⚙️ %cmd\n',
-  footer: '╰────────────────╯',
-  after: '\n⌬ 𝗖𝗬𝗕𝗘𝗥 𝗠𝗘𝗡𝗨 ☠️ - Sistema ejecutado con éxito.'
-}
+    header: `
+┣━━━━━━━━━━━━━━━━
+┃ *%category*
+┣━━━━━━━━━━━━━━━━`,
 
-let handler = async (m, { conn, usedPrefix: _p }) => {
+    body: `┃ • .%cmd`,
+
+    footer: '┗━━━━━━━━━━━━━━━━',
+
+    after: `> © ғᴀɴᴛᴏᴍ! - ᴍᴜʟᴛɪᴅᴇᴠɪᴄᴇ`
+  }
+
   try {
-    let tag = `@${m.sender.split("@")[0]}`
-    let { exp, level } = global.db.data.users[m.sender]
-    let { min, xp, max } = xpRange(level, global.multiplier)
-    let name = await conn.getName(m.sender)
-    let _uptime = process.uptime() * 1000
-    let muptime = clockString(_uptime)
-    let totalreg = Object.keys(global.db.data.users).length
-    let mode = global.opts["self"] ? "Privado" : "Público"
+    let name = m.pushName || conn.getName(m.sender)  // Nama pengguna
+    let botName = global.namebot || conn.getName(conn.user.jid)  // Nama bot (ambil dari config)
 
-    let help = Object.values(global.plugins).filter(p => !p.disabled).map(p => ({
-      help: Array.isArray(p.help) ? p.help : [p.help],
-      tags: Array.isArray(p.tags) ? p.tags : [p.tags],
-      prefix: 'customPrefix' in p,
-      limit: p.limit,
-      premium: p.premium,
-      enabled: !p.disabled,
+    let d = new Date(new Date + 3600000)
+    let locale = 'id'
+    let date = d.toLocaleDateString(locale, {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta'
+    })
+    let time = d.toLocaleTimeString(locale, { timeZone: 'Asia/Jakarta' }).replace(/[.]/g, ':')
+
+    let _muptime, _uptime
+    if (process.send) {
+      process.send('uptime')
+      _muptime = await new Promise(resolve => {
+        process.once('message', resolve)
+        setTimeout(resolve, 1000)
+      }) * 1000
+      process.send('uptime')
+      _uptime = await new Promise(resolve => {
+        process.once('message', resolve)
+        setTimeout(resolve, 1000)
+      }) * 1000
+    }
+
+    let totalreg = Object.keys(global.db.data.users).length
+    let platform = os.platform()
+    let muptime = clockString(_muptime)
+    let uptime = clockString(_uptime)
+
+    let help = Object.values(global.plugins).filter(plugin => !plugin.disabled).map(plugin => ({
+      help: Array.isArray(plugin.tags) ? plugin.help : [plugin.help],
+      tags: Array.isArray(plugin.tags) ? plugin.tags : [plugin.tags],
+      prefix: 'customPrefix' in plugin,
+      limit: plugin.limit,
+      premium: plugin.premium,
+      enabled: !plugin.disabled,
     }))
 
     for (let plugin of help) {
-      if (plugin.tags) {
-        for (let t of plugin.tags) {
-          if (!(t in tags) && t) tags[t] = textCyberpunk(t)
-        }
-      }
+      if (plugin && 'tags' in plugin)
+        for (let tag of plugin.tags)
+          if (!(tag in tags) && tag) tags[tag] = tag
     }
 
-    const { before, header, body, footer, after } = defaultMenu
+    conn.menu = conn.menu ? conn.menu : {}
+    let before = conn.menu.before || defaultMenu.before
+    let header = conn.menu.header || defaultMenu.header
+    let body = conn.menu.body || defaultMenu.body
+    let footer = conn.menu.footer || defaultMenu.footer
+    let after = conn.menu.after || defaultMenu.after
 
-    let _text = [
-      before,
-      ...Object.keys(tags).map(tag => {
-        const cmds = help
-          .filter(menu => menu.tags.includes(tag))
-          .map(menu => menu.help.map(cmd => body.replace(/%cmd/g, menu.prefix ? cmd : _p + cmd)).join('\n'))
-          .join('\n')
-        return `${header.replace(/%category/g, tags[tag])}\n${cmds}\n${footer}`
-      }),
-      after
-    ].join('\n')
+    let alltags = []
+    let menunya = []
 
+    if (theargs?.length > 0) {
+      if (theargs?.includes("next")) {
+        let tag = Object.keys(tags)[Math.floor(Math.random() * Object.keys(tags).length)]
+        menunya = [ header.replace(/%category/g, tags[tag].toUpperCase()) + '\n' + [
+            ...help.filter(menu => menu.tags && menu.tags.includes(tag) && menu.help).map(menu => {
+              return menu.help.map(help => {
+                return body.replace(/%cmd/g, help).trim()
+              }).join('\n')
+            }),
+            footer
+          ].join('\n')
+        ]
+      } else {
+        menunya = Object.keys(tags).map(tag => {
+          alltags.push(`- *${tag}*`)
+          if (!theargs.includes(tag) && !theargs.includes('all')) return ''
+          return header.replace(/%category/g, tags[tag].toUpperCase()) + '\n' + [
+            ...help.filter(menu => menu.tags && menu.tags.includes(tag) && menu.help).map(menu => {
+              return menu.help.map(help => {
+                return body.replace(/%cmd/g, help).trim()
+              }).join('\n')
+            }),
+            footer
+          ].join('\n')
+        })
+      }
+    } else if (theargs?.length === 0) {
+      menunya = [global?.msg?.menu(m)]
+    }
+
+    menunya = menunya.filter(item => item !== '' && item !== undefined && item !== null)
+
+    if (menunya?.length <= 0) {
+      menunya = [`Menu "${theargs.join(' ')}" tidak ditemukan. Tag tersedia:`]
+      menunya.push(...alltags)
+    }
+
+    let _text = [before, ...menunya, after].join('\n')
+
+    let text = typeof conn.menu == 'string' ? conn.menu : typeof conn.menu == 'object' ? _text : ''
     let replace = {
       '%': '%',
-      name,
-      level,
-      exp: exp - min,
-      maxexp: xp,
-      totalreg,
-      mode,
-      muptime,
-      readmore: String.fromCharCode(8206).repeat(4001)
+      p: _p, uptime, muptime,
+      me: conn.getName(conn.user.jid),
+      name, date, time, platform, _p, totalreg,
+      readmore: readMore
+    }
+    text = text.replace(new RegExp(`%(${Object.keys(replace).sort((a, b) => b.length - a.length).join`|`})`, 'g'), (_, name) => '' + replace[name])
+
+    let loadingFrames = [
+      '*[ ⚀ ] Loading...*\n_*▰▱▱▱▱*_',
+      '*[ ⚁ ] Loading...*\n_*▱▰▱▱▱*_',
+      '*[ ⚂ ] Loading...*\n_*▱▱▰▱▱*_',
+      '*[ ⚃ ] Loading...*\n_*▱▱▱▰▱*_',
+      '*[ ⚄ ] Loading...*\n_*▱▱▱▱▰*_',
+      '*[ ✔ ] Selesai!*'
+    ]
+
+    let { key } = await conn.sendMessage(m.chat, { text: loadingFrames[0] }, { quoted: m })
+
+    for (let i = 1; i < loadingFrames.length; i++) {
+      await new Promise(resolve => setTimeout(resolve, 200)) // bisa diatur jadi 100-300ms
+      await conn.sendMessage(m.chat, { text: loadingFrames[i], edit: key })
     }
 
-    let text = _text.replace(/%(\w+)/g, (_, key) => replace[key] || '')
-
     await conn.sendMessage(m.chat, {
-    text: `⌬ 📡 ᴄʏʙᴇʀ ᴍᴇɴᴜ sʏsᴛᴇᴍ ɪɴɪᴄɪᴀɴᴅᴏ...\n⚙️ Cargando comandos...`,
-      mentions: [m.sender]
-    }, { quoted: m })
-
-    await conn.sendMessage(m.chat, {
-      image: { url: 'https://files.catbox.moe/0ro3o9.jpg' },
-      caption: text,
-      footer: '🧠 BLACK CLOVER SYSTEM ☘️',
-      buttons: [
-        { buttonId: `${_p}grupos`, buttonText: { displayText: '🌐 ＧＲＵＰＯＳ' }, type: 1 },
-        { buttonId: `${_p}code`, buttonText: { displayText: '🕹 ＳＥＲＢＯＴ' }, type: 1 }
-      ],
-      viewOnce: true
-    }, { quoted: m })
-
+  document: { url: 'https://wa.me' },
+  mimetype: 'application/pdf',
+  fileName: m.name,
+  fileLength: 1000000000000,
+  caption: text.trim(),
+  contextInfo: {
+    isForwarded: true,
+    externalAdReply: {
+      title: botName,
+      body: 'zen',
+      thumbnailUrl: 'https://qu.ax/UuOqe.jpg',
+      sourceUrl: 'https://wa.me',
+      mediaType: 1,
+      renderLargerThumbnail: true,
+    },
+  },
+buttons: [
+      {
+        buttonId: '.menu all',
+        buttonText: {
+          displayText: 'ᴀʟʟᴍᴇɴᴜ 📚'
+        },
+        type: 1,
+      },
+      {
+        buttonId: '.owner',
+        buttonText: {
+          displayText: 'ᴏᴡɴᴇʀ👤'
+        },
+        type: 1,
+      },
+      {
+        buttonId: 'action',
+        buttonText: { displayText: 'sᴇᴍᴜᴀ ᴍᴇɴᴜ' },
+        type: 4,
+        nativeFlowInfo: {
+          name: 'single_select',
+          paramsJson: JSON.stringify({
+            title: 'ᴅᴜᴏʟɪɴɢᴏ - ᴀɪ - ᴍᴇɴᴜ',
+            sections: [
+              {
+                title: 'ᴅᴜᴏʟɪɴɢᴏ - ᴀɪ - ᴍᴇɴᴜ',
+                highlight_label: 'ᴅᴜᴏʟɪɴɢᴏ - ᴍᴇɴᴜ',
+                rows: [
+                  { title: 'ᴀʟʟᴍᴇɴᴜ 📚', description: '➡️ ᴍᴇɴᴀᴍᴘɪʟᴋᴀɴ ꜱᴇᴍᴜᴀ ᴍᴇɴᴜ', id: '.menu all' },
+                  { title: 'ᴀᴅᴠᴀɴᴄᴇᴅ 🧪', description: '➡️ ᴍᴇɴᴜ ᴀᴅᴠᴀɴᴄᴇᴅ', id: '.menu advanced' },
+                  { title: 'ᴀɪ 🤖', description: '➡️ ᴍᴇɴᴜ ᴀɪ', id: '.menu ai' },
+                  { title: 'ᴀɴᴏɴʏᴍᴏᴜꜱ 🕵️‍♂️', description: '➡️ ᴍᴇɴᴜ ᴀɴᴏɴʏᴍᴏᴜꜱ', id: '.menu anonymous' },
+                  { title: 'ᴀᴜᴅɪᴏ 🎧', description: '➡️ ᴍᴇɴᴜ ᴀᴜᴅɪᴏ', id: '.menu audio' },
+                  { title: 'ᴅᴏᴡɴʟᴏᴀᴅᴇʀ ⬇️', description: '➡️ ᴍᴇɴᴜ ᴅᴏᴡɴʟᴏᴀᴅᴇʀ', id: '.menu downloader' },
+                  { title: 'ꜰᴜɴ 🎉', description: '➡️ ᴍᴇɴᴜ ꜰᴜɴ', id: '.menu fun' },
+                  { title: 'ɢᴀᴍᴇ 🎮', description: '➡️ ᴍᴇɴᴜ ɢᴀᴍᴇ', id: '.menu game' },
+                  { title: 'ɢʀᴏᴜᴘ 👥', description: '➡️ ᴍᴇɴᴜ ɢʀᴏᴜᴘ', id: '.menu group' },
+                  { title: 'ɪɴꜰᴏ ℹ️', description: '➡️ ᴍᴇɴᴜ ɪɴꜰᴏ', id: '.menu info' },
+                  { title: 'ɪɴᴛᴇʀɴᴇᴛ 🌐', description: '➡️ ᴍᴇɴᴜ ɪɴᴛᴇʀɴᴇᴛ', id: '.menu internet' },
+                  { title: 'ɪꜱʟᴀᴍɪ 🕌', description: '➡️ ᴍᴇɴᴜ ɪꜱʟᴀᴍɪ', id: '.menu islami' },
+                  { title: 'ɪꜱʟᴀᴍɪᴄ 🕋', description: '➡️ ᴍᴇɴᴜ ɪꜱʟᴀᴍɪᴄ', id: '.menu islamic' },
+                  { title: 'ᴋᴇʀᴀɴɢ 🐚', description: '➡️ ᴍᴇɴᴜ ᴋᴇʀᴀɴɢ', id: '.menu kerang' },
+                  { title: 'ᴍᴀɪɴ 🧭', description: '➡️ ᴍᴇɴᴜ ᴍᴀɪɴ', id: '.menu main' },
+                  { title: 'ᴍᴀᴋᴇʀ ✏️', description: '➡️ ᴍᴇɴᴜ ᴍᴀᴋᴇʀ', id: '.menu maker' },
+                  { title: 'ɴꜱꜰᴡ 🔞', description: '➡️ ᴍᴇɴᴜ ɴꜱꜰᴡ', id: '.menu nsfw' },
+                  { title: 'ᴏᴡɴᴇʀ 👑', description: '➡️ ᴍᴇɴᴜ ᴏᴡɴᴇʀ', id: '.menu owner' },
+                  { title: 'ᴘʀᴇᴍɪᴜᴍ 💎', description: '➡️ ᴍᴇɴᴜ ᴘʀᴇᴍɪᴜᴍ', id: '.menu premium' },
+                  { title: 'ᴘʀɪᴍʙᴏɴ 🔮', description: '➡️ ᴍᴇɴᴜ ᴘʀɪᴍʙᴏɴ', id: '.menu primbon' },
+                  { title: 'ʀᴘɢ ⚔️', description: '➡️ ᴍᴇɴᴜ ʀᴘɢ', id: '.menu rpg' },
+                  { title: 'ꜱᴇᴀʀᴄʜ 🔍', description: '➡️ ᴍᴇɴᴜ ꜱᴇᴀʀᴄʜ', id: '.menu search' },
+                  { title: 'ꜱᴏᴜɴᴅ 🔊', description: '➡️ ᴍᴇɴᴜ ꜱᴏᴜɴᴅ', id: '.menu sound' },
+                  { title: 'ꜱᴛᴀʟᴋᴇʀ 🕵️', description: '➡️ ᴍᴇɴᴜ ꜱᴛᴀʟᴋᴇʀ', id: '.menu stalker' },
+                  { title: 'ꜱᴛɪᴄᴋᴇʀ 🖼️', description: '➡️ ᴍᴇɴᴜ ꜱᴛɪᴄᴋᴇʀ', id: '.menu sticker' },
+                  { title: 'ꜱᴛᴏʀᴇ 🛒', description: '➡️ ᴍᴇɴᴜ ꜱᴛᴏʀᴇ', id: '.menu store' },
+                  { title: 'ᴛᴏᴏʟꜱ 🛠️', description: '➡️ ᴍᴇɴᴜ ᴛᴏᴏʟꜱ', id: '.menu tools' },
+                  { title: 'ᴜꜱᴇʀ 👤', description: '➡️ ᴍᴇɴᴜ ᴜꜱᴇʀ', id: '.menu user' },
+                  { title: 'xᴘ 📈', description: '➡️ ᴍᴇɴᴜ xᴘ', id: '.menu xp' }
+                ]
+              }
+            ]
+          })
+        }
+      }
+    ],
+    headerType: 1
+}, { quoted: m })
   } catch (e) {
-    console.error(e)
-    conn.reply(m.chat, '❎ Error al generar el menú del sistema.', m)
+    m.reply('Error')
   }
 }
 
-handler.help = ['menu', 'menú']
-handler.tags = ['main']
-handler.command = ['menu', 'menú', 'help', 'ayuda']
-handler.register = true
+handler.command = /^(menu|allmenu)$/i
+
 export default handler
 
+const more = String.fromCharCode(8206)
+const readMore = more.repeat(4001)
+
 function clockString(ms) {
-  let h = isNaN(ms) ? '--' : Math.floor(ms / 3600000)
+  let d = isNaN(ms) ? '--' : Math.floor(ms / 86400000)
+  let h = isNaN(ms) ? '--' : Math.floor(ms / 3600000) % 24
   let m = isNaN(ms) ? '--' : Math.floor(ms / 60000) % 60
-  let s = isNaN(ms) ? '--' : Math.floor(ms / 1000) % 60
-  return [h, m, s].map(v => v.toString().padStart(2, '0')).join(':')
+  return [d, 'H ', h, 'J ', m, 'M*'].map(v => v.toString().padStart(2, 0)).join('')
 }
+
+// Konfigurasi agar tidak ngetag
+global.configMenuTagUser = false
