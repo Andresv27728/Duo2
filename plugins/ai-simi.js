@@ -4,7 +4,7 @@ import fetch from 'node-fetch';
 
 const handler = async (m, {conn, text, command, args, usedPrefix}) => {
 
-if (!text) conn.reply(m.chat, `${emoji} Te faltó el texto para hablar con la *Bot*`, m, rcanal);
+if (!text) conn.reply(m.chat, `${emoji} Te faltó el texto para hablar con la *Bot*`, m);
 try {
 // await m.react(emojis)
 const resSimi = await simitalk(text);
@@ -17,7 +17,7 @@ handler.help = ['simi', 'bot'];
 handler.tags = ['fun'];
 handler.group = true;
 handler.register = true
-handler.command = ['bot', 'nino', 'nino']
+handler.command = ['yuki', 'Yuki']
 
 export default handler;
 
